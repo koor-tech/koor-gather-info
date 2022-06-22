@@ -9,7 +9,8 @@ It collects the following information :
 6. Node related information : `kubectl get nodes` and `kubectl get nodes -oyaml`
 7. rook-config-override ConfigMap : `kubectl -n rook-ceph get ConfigMap rook-config-override -o yaml`
 
-**Pre-requisites: Toolbox pod must be running to collect some of the information needed by the debug script**
+**Pre-requisites: Toolbox pod must be running to collect some of the information needed by the debug script**  
+
 Usage : `sh gather-logs.sh <-D>`  
 `-D` : Optional command line argument to crank up the debug logging for rook-ceph cluster.
 
