@@ -40,7 +40,7 @@ gatherCephCommands() {
     mkdir -p ceph-commands
 
     # Ceph command outputs
-    kubectl -n "${CLUSTER_NAMESPACE}" exec -it deploy/rook-ceph-tools -- ceph -s > ceph-commands/ceph_status 
+    kubectl -n "${CLUSTER_NAMESPACE}" exec -it deploy/rook-ceph-tools -- ceph -s > ceph-commands/ceph_status
     kubectl -n "${CLUSTER_NAMESPACE}" exec -it deploy/rook-ceph-tools -- ceph df > ceph-commands/ceph_df
     kubectl -n "${CLUSTER_NAMESPACE}" exec -it deploy/rook-ceph-tools -- ceph osd df tree > ceph-commands/ceph_osd_df_tree
     kubectl -n "${CLUSTER_NAMESPACE}" exec -it deploy/rook-ceph-tools -- ceph health detail > ceph-commands/ceph_health_detail
@@ -69,7 +69,12 @@ enableDebugLog() {
 }
 
 showHelp() {
-    echo ""
+    echo "Usage: $0 [FLAGS]"
+    echo "Flags:"
+    echo "  -h - Show help menu."
+    echo "  -d - Set Rook Ceph Operator and CSI log level to debug/trace."
+    echo "  -n NAMESPACE - Rook Ceph Cluster namespace, default: 'rook-ceph' (CLUSTER_NAMESPACE)."
+    echo "  -o NAMESPACE - If the operator is run separately from the cluster, specify the namespace (OPERATOR_NAMESPACE)."
 }
 
 LOGS_TMP_DIR="$(mktemp -d -t gather-logs-XXXXXXXXXX)"
