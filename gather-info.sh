@@ -8,9 +8,9 @@ gatherKubernetesPodLogs() {
 
     for p in $(kubectl -n "${CLUSTER_NAMESPACE}" get pods -o jsonpath='{.items[*].metadata.name}'); do
         for c in $(kubectl -n "${CLUSTER_NAMESPACE}" get pod "${p}" -o jsonpath='{.spec.containers[*].name}'); do
-            echo "BEGIN logs from pod: ${p} ${c}"
+            echo "gather-info: BEGIN logs from pod: ${p} ${c}"
             kubectl -n "${CLUSTER_NAMESPACE}" logs -c "${c}" "${p}" > "logs/${p}-${c}"
-            echo "END logs from pod: ${p} ${c}"
+            echo "gather-info: END logs from pod: ${p} ${c}"
         done
     done
 }
@@ -62,6 +62,13 @@ gatherCephCommands() {
     kubectl -n "${CLUSTER_NAMESPACE}" exec -it deploy/rook-ceph-tools -- ceph time-sync-status > ceph-commands/ceph_time_sync_status
 }
 
+packInfo() {
+    TAR_FILE="${CWD}/$(date +"%s-%Y-%m-%D")-koor-gather-info.tar.gz"
+
+    tar cfvz "${TAR_FILE}" "${INFO_TMP_DIR}"
+    echo "gather-info: Info dump tar available at: ${TAR_FILE}"
+}
+
 enableDebugLog() {
     kubectl -n "${OPERATOR_NAMESPACE}" patch configmaps/rook-ceph-operator-config \
         --type merge \
@@ -75,11 +82,14 @@ showHelp() {
     echo "  -d - Set Rook Ceph Operator and CSI log level to debug/trace."
     echo "  -n NAMESPACE - Rook Ceph Cluster namespace, default: 'rook-ceph' (CLUSTER_NAMESPACE)."
     echo "  -o NAMESPACE - If the operator is run separately from the cluster, specify the namespace (OPERATOR_NAMESPACE)."
+    echo "  -t - Disable tar-ing the collected info to the current working dir."
 }
 
-LOGS_TMP_DIR="$(mktemp -d -t gather-logs-XXXXXXXXXX)"
+# Save current working dir so we can later create the tar file there
+CWD="$(pwd)"
 
-cd "${LOGS_TMP_DIR}" || { echo "Failed to cd to ${LOGS_TMP_DIR} dir."; exit 1; }
+INFO_TMP_DIR="$(mktemp -d -t gather-logs-XXXXXXXXXX)"
+cd "${INFO_TMP_DIR}" || { echo "gather-info: Failed to cd to ${INFO_TMP_DIR} dir."; exit 1; }
 
 # Flag Parsing BEGIN
 # Reset getopts index
@@ -87,8 +97,9 @@ OPTIND=1
 
 # Initialize settings
 enable_debug_log=0
+enable_pack_info=1
 
-while getopts "h?dno:" opt; do
+while getopts "h?dnot:" opt; do
   case "$opt" in
     h|\?)
         showHelp
@@ -103,6 +114,9 @@ while getopts "h?dno:" opt; do
     o)
         OPERATOR_NAMESPACE="${OPTARG}"
         ;;
+    t)
+        enable_pack_info=0
+        ;;
   esac
 done
 
@@ -114,6 +128,8 @@ shift $(( OPTIND - 1 ))
 # Set the operator namespace to the cluster namespace if it is still empty after the flag parsing
 [ -z "${OPERATOR_NAMESPACE}" ] && OPERATOR_NAMESPACE="${CLUSTER_NAMESPACE}"
 
+echo "gather-info: Starting at $(date +%s) ..."
+
 if [ ${enable_debug_log} = 1 ]; then
     enableDebugLog
 fi
@@ -121,3 +137,11 @@ fi
 gatherKubernetesPodLogs
 gatherKubernetesObjects
 gatherCephCommands
+
+if [ ${enable_pack_info} = 1 ]; then
+    packInfo
+else
+    echo "gather-info: Skipped tar packing of info dump."
+fi
+
+echo "gather-info: Starting at $(date +%s) ..."

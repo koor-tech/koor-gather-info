@@ -17,5 +17,6 @@ Usage : `sh gather-logs.sh <-hd>`
 * `-d` : Optional command line argument to crank up the debug logging for rook-ceph cluster.
 * `-n CLUSTER_NAMESPACE`: Optional command line argument to set the rook-ceph cluster namespace.
 * `-o OPERATOR_NAMESPACE`: Optional command line argument to set the rook-ceph-operator namespace.
+* `-t` - Disable tar-ing the collected info to the current working dir.
 
 The script creates a temp directory on the system prefixed with `gather-logs-`.
