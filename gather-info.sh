@@ -63,10 +63,15 @@ gatherCephCommands() {
 }
 
 packInfo() {
-    TAR_FILE="${CWD}/$(date +"%s-%Y-%m-%D")-koor-gather-info.tar.gz"
+    OLD_LC_ALL="$LC_ALL"
+    # Override to make sure the date / time format isn't breaking the tar file name
+    export LC_ALL="C"
+
+    TAR_FILE="${CWD}/$(date +"%s-%Y-%m-%d")-koor-gather-info.tar.gz"
 
     tar cfvz "${TAR_FILE}" "${INFO_TMP_DIR}"
     echo "gather-info: Info dump tar available at: ${TAR_FILE}"
+    LC_ALL="$OLD_LC_ALL"
 }
 
 enableDebugLog() {
@@ -144,4 +149,4 @@ else
     echo "gather-info: Skipped tar packing of info dump."
 fi
 
-echo "gather-info: Starting at $(date +%s) ..."
+echo "gather-info: Done at $(date +%s)."
