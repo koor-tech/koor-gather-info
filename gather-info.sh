@@ -60,6 +60,7 @@ gatherCephCommands() {
     kubectl -n "${CLUSTER_NAMESPACE}" exec -it deploy/rook-ceph-tools -- ceph fs dump > ceph-commands/ceph_fs_dump
     kubectl -n "${CLUSTER_NAMESPACE}" exec -it deploy/rook-ceph-tools -- ceph mds stat > ceph-commands/ceph_mds_stat
     kubectl -n "${CLUSTER_NAMESPACE}" exec -it deploy/rook-ceph-tools -- ceph time-sync-status > ceph-commands/ceph_time_sync_status
+    kubectl -n "${CLUSTER_NAMESPACE}" exec -it deploy/rook-ceph-tools -- ceph config dump > ceph-commands/ceph_config_dump
 }
 
 packInfo() {
