@@ -34,33 +34,43 @@ gatherKubernetesObjects() {
 
     # "all" is not "all" but it contains most of the other basic K8S resources we might be interested in
     kubectl -n "${CLUSTER_NAMESPACE}" get all > rook_ceph-get-all
+
+    # Get Rook Ceph CRs as YAML
+    for crd in $(kubectl get crd --no-headers -o custom-columns=":metadata.name" | grep ".ceph.rook.io"); do
+        kubectl get -A "${crd}" --output yaml > "rook_ceph-get-cr-${crd}"
+    done
+}
+
+runCommandInToolsPod() {
+    kubectl -n "${CLUSTER_NAMESPACE}" exec -it deploy/rook-ceph-tools -- "${@}"
 }
 
 gatherCephCommands() {
     mkdir -p ceph-commands
 
     # Ceph command outputs
-    kubectl -n "${CLUSTER_NAMESPACE}" exec -it deploy/rook-ceph-tools -- ceph -s > ceph-commands/ceph_status
-    kubectl -n "${CLUSTER_NAMESPACE}" exec -it deploy/rook-ceph-tools -- ceph df > ceph-commands/ceph_df
-    kubectl -n "${CLUSTER_NAMESPACE}" exec -it deploy/rook-ceph-tools -- ceph osd df tree > ceph-commands/ceph_osd_df_tree
-    kubectl -n "${CLUSTER_NAMESPACE}" exec -it deploy/rook-ceph-tools -- ceph health detail > ceph-commands/ceph_health_detail
-    kubectl -n "${CLUSTER_NAMESPACE}" exec -it deploy/rook-ceph-tools -- ceph df detail > ceph-commands/ceph_df_detail
-    kubectl -n "${CLUSTER_NAMESPACE}" exec -it deploy/rook-ceph-tools -- ceph osd tree > ceph-commands/ceph_osd_tree
-    kubectl -n "${CLUSTER_NAMESPACE}" exec -it deploy/rook-ceph-tools -- ceph osd dump > ceph-commands/ceph_osd_dump
-    kubectl -n "${CLUSTER_NAMESPACE}" exec -it deploy/rook-ceph-tools -- ceph osd perf > ceph-commands/ceph_osd_perf
-    kubectl -n "${CLUSTER_NAMESPACE}" exec -it deploy/rook-ceph-tools -- ceph osd pool ls detail > ceph-commands/ceph_osd_pool_ls_detail
-    kubectl -n "${CLUSTER_NAMESPACE}" exec -it deploy/rook-ceph-tools -- ceph osd pool autoscale-status > ceph-commands/ceph_osd_pool_autoscale_status
-    kubectl -n "${CLUSTER_NAMESPACE}" exec -it deploy/rook-ceph-tools -- ceph osd numa-status > ceph-commands/ceph_osd_numa-status
-    kubectl -n "${CLUSTER_NAMESPACE}" exec -it deploy/rook-ceph-tools -- ceph osd blocked-by > ceph-commands/ceph_osd_blocked-by
-    kubectl -n "${CLUSTER_NAMESPACE}" exec -it deploy/rook-ceph-tools -- ceph mon dump > ceph-commands/ceph_mon_dump
-    kubectl -n "${CLUSTER_NAMESPACE}" exec -it deploy/rook-ceph-tools -- ceph mon stat > ceph-commands/ceph_mon_stat
-    kubectl -n "${CLUSTER_NAMESPACE}" exec -it deploy/rook-ceph-tools -- ceph pg stat > ceph-commands/ceph_pg_stat
-    kubectl -n "${CLUSTER_NAMESPACE}" exec -it deploy/rook-ceph-tools -- ceph pg dump > ceph-commands/ceph_pg_dump
-    kubectl -n "${CLUSTER_NAMESPACE}" exec -it deploy/rook-ceph-tools -- ceph fs ls > ceph-commands/ceph_fs_ls
-    kubectl -n "${CLUSTER_NAMESPACE}" exec -it deploy/rook-ceph-tools -- ceph fs dump > ceph-commands/ceph_fs_dump
-    kubectl -n "${CLUSTER_NAMESPACE}" exec -it deploy/rook-ceph-tools -- ceph mds stat > ceph-commands/ceph_mds_stat
-    kubectl -n "${CLUSTER_NAMESPACE}" exec -it deploy/rook-ceph-tools -- ceph time-sync-status > ceph-commands/ceph_time_sync_status
-    kubectl -n "${CLUSTER_NAMESPACE}" exec -it deploy/rook-ceph-tools -- ceph config dump > ceph-commands/ceph_config_dump
+    runCommandInToolsPod ceph versions > ceph-commands/ceph_versions
+    runCommandInToolsPod ceph -s > ceph-commands/ceph_status
+    runCommandInToolsPod ceph df > ceph-commands/ceph_df
+    runCommandInToolsPod ceph osd df tree > ceph-commands/ceph_osd_df_tree
+    runCommandInToolsPod ceph health detail > ceph-commands/ceph_health_detail
+    runCommandInToolsPod ceph df detail > ceph-commands/ceph_df_detail
+    runCommandInToolsPod ceph osd tree > ceph-commands/ceph_osd_tree
+    runCommandInToolsPod ceph osd dump > ceph-commands/ceph_osd_dump
+    runCommandInToolsPod ceph osd perf > ceph-commands/ceph_osd_perf
+    runCommandInToolsPod ceph osd pool ls detail > ceph-commands/ceph_osd_pool_ls_detail
+    runCommandInToolsPod ceph osd pool autoscale-status > ceph-commands/ceph_osd_pool_autoscale_status
+    runCommandInToolsPod ceph osd numa-status > ceph-commands/ceph_osd_numa-status
+    runCommandInToolsPod ceph osd blocked-by > ceph-commands/ceph_osd_blocked-by
+    runCommandInToolsPod ceph mon dump > ceph-commands/ceph_mon_dump
+    runCommandInToolsPod ceph mon stat > ceph-commands/ceph_mon_stat
+    runCommandInToolsPod ceph pg stat > ceph-commands/ceph_pg_stat
+    runCommandInToolsPod ceph pg dump > ceph-commands/ceph_pg_dump
+    runCommandInToolsPod ceph fs ls > ceph-commands/ceph_fs_ls
+    runCommandInToolsPod ceph fs dump > ceph-commands/ceph_fs_dump
+    runCommandInToolsPod ceph mds stat > ceph-commands/ceph_mds_stat
+    runCommandInToolsPod ceph time-sync-status > ceph-commands/ceph_time_sync_status
+    runCommandInToolsPod ceph config dump > ceph-commands/ceph_config_dump
 }
 
 packInfo() {
