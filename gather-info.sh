@@ -82,7 +82,7 @@ gatherCephCommands() {
 gatherCrashInfo() {
     for crash in $(runCommandInToolsPod ceph crash ls-new); do
         echo "crash info for $crash "
-        runCommandInToolsPod ceph crash info $crash
+        runCommandInToolsPod ceph crash info "$crash"
     done
 }
 
@@ -91,7 +91,7 @@ packInfo() {
     # Override to make sure the date / time format isn't breaking the tar file name
     export LC_ALL="C"
 
-    TAR_FILE="${CWD}/$(date +"%s-%Y-%m-%d")-koor-gather-info.tar.gz"
+    TAR_FILE="${CWD}/$(date +"%Y-%m-%d")-koor-gather-info.tar.gz"
 
     tar cfvz "${TAR_FILE}" "${INFO_TMP_DIR}"
     echo "gather-info: Info dump tar available at: ${TAR_FILE}"
@@ -116,8 +116,8 @@ showHelp() {
 
 # Save current working dir so we can later create the tar file there
 CWD="$(pwd)"
-
-INFO_TMP_DIR="$(mktemp -d -t gather-logs-$(date +"%s-%Y-%m-%d")-XXXXXXXXXX)"
+DATE="$(date +"%Y-%m-%d")"
+INFO_TMP_DIR="$(mktemp -d -t gather-logs-"$DATE"-XXXXXXXXXX)"
 cd "${INFO_TMP_DIR}" || { echo "gather-info: Failed to cd to ${INFO_TMP_DIR} dir."; exit 1; }
 
 # Flag Parsing BEGIN
