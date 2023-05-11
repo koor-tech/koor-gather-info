@@ -10,7 +10,11 @@ gatherKubernetesPodLogs() {
         for c in $(kubectl -n "${CLUSTER_NAMESPACE}" get pod "${p}" -o jsonpath='{.spec.containers[*].name}'); do
             echo "gather-info: BEGIN logs from pod: ${p} ${c}"
             kubectl -n "${CLUSTER_NAMESPACE}" logs -c "${c}" "${p}" > "logs/${p}-${c}"
-            echo "gather-info: END logs from pod: ${p} ${c}"
+            if [ -s "logs/${p}-${c}" ]; then
+                echo "gather-info: END logs from pod: ${p} ${c}"
+            else
+                echo "WARN: No debug logs collected for ${p} ${c}"
+            fi
         done
     done
 }
@@ -42,35 +46,44 @@ gatherKubernetesObjects() {
 }
 
 runCommandInToolsPod() {
-    kubectl -n "${CLUSTER_NAMESPACE}" exec -it deploy/rook-ceph-tools -- "${@}"
+    command=$(echo "$*" | sed 's/ /_/g')
+    command=$(echo "$command" | sed 's/-/_/g')
+    kubectl -n "${CLUSTER_NAMESPACE}" exec -it deploy/rook-ceph-tools -- "${@}" > ceph-commands/"${command}"
 }
 
 gatherCephCommands() {
     mkdir -p ceph-commands
 
     # Ceph command outputs
-    runCommandInToolsPod ceph versions > ceph-commands/ceph_versions
-    runCommandInToolsPod ceph -s > ceph-commands/ceph_status
-    runCommandInToolsPod ceph df > ceph-commands/ceph_df
-    runCommandInToolsPod ceph osd df tree > ceph-commands/ceph_osd_df_tree
-    runCommandInToolsPod ceph health detail > ceph-commands/ceph_health_detail
-    runCommandInToolsPod ceph df detail > ceph-commands/ceph_df_detail
-    runCommandInToolsPod ceph osd tree > ceph-commands/ceph_osd_tree
-    runCommandInToolsPod ceph osd dump > ceph-commands/ceph_osd_dump
-    runCommandInToolsPod ceph osd perf > ceph-commands/ceph_osd_perf
-    runCommandInToolsPod ceph osd pool ls detail > ceph-commands/ceph_osd_pool_ls_detail
-    runCommandInToolsPod ceph osd pool autoscale-status > ceph-commands/ceph_osd_pool_autoscale_status
-    runCommandInToolsPod ceph osd numa-status > ceph-commands/ceph_osd_numa-status
-    runCommandInToolsPod ceph osd blocked-by > ceph-commands/ceph_osd_blocked-by
-    runCommandInToolsPod ceph mon dump > ceph-commands/ceph_mon_dump
-    runCommandInToolsPod ceph mon stat > ceph-commands/ceph_mon_stat
-    runCommandInToolsPod ceph pg stat > ceph-commands/ceph_pg_stat
-    runCommandInToolsPod ceph pg dump > ceph-commands/ceph_pg_dump
-    runCommandInToolsPod ceph fs ls > ceph-commands/ceph_fs_ls
-    runCommandInToolsPod ceph fs dump > ceph-commands/ceph_fs_dump
-    runCommandInToolsPod ceph mds stat > ceph-commands/ceph_mds_stat
-    runCommandInToolsPod ceph time-sync-status > ceph-commands/ceph_time_sync_status
-    runCommandInToolsPod ceph config dump > ceph-commands/ceph_config_dump
+    runCommandInToolsPod ceph versions
+    runCommandInToolsPod ceph status
+    runCommandInToolsPod ceph df
+    runCommandInToolsPod ceph osd df tree
+    runCommandInToolsPod ceph health detail
+    runCommandInToolsPod ceph df detail
+    runCommandInToolsPod ceph osd tree
+    runCommandInToolsPod ceph osd dump
+    runCommandInToolsPod ceph osd perf
+    runCommandInToolsPod ceph osd pool ls detail
+    runCommandInToolsPod ceph osd pool autoscale-status
+    runCommandInToolsPod ceph osd numa-status
+    runCommandInToolsPod ceph osd blocked-by
+    runCommandInToolsPod ceph mon dump
+    runCommandInToolsPod ceph mon stat
+    runCommandInToolsPod ceph pg stat
+    runCommandInToolsPod ceph pg dump
+    runCommandInToolsPod ceph fs ls
+    runCommandInToolsPod ceph fs dump
+    runCommandInToolsPod ceph mds stat
+    runCommandInToolsPod ceph time-sync-status
+    runCommandInToolsPod ceph config dump
+}
+
+gatherCrashInfo() {
+    for crash in $(runCommandInToolsPod ceph crash ls-new); do
+        echo "crash info for $crash "
+        runCommandInToolsPod ceph crash info "$crash"
+    done
 }
 
 packInfo() {
@@ -78,7 +91,7 @@ packInfo() {
     # Override to make sure the date / time format isn't breaking the tar file name
     export LC_ALL="C"
 
-    TAR_FILE="${CWD}/$(date +"%s-%Y-%m-%d")-koor-gather-info.tar.gz"
+    TAR_FILE="${CWD}/$(date +"%Y-%m-%d")-koor-gather-info.tar.gz"
 
     tar cfvz "${TAR_FILE}" "${INFO_TMP_DIR}"
     echo "gather-info: Info dump tar available at: ${TAR_FILE}"
@@ -103,8 +116,8 @@ showHelp() {
 
 # Save current working dir so we can later create the tar file there
 CWD="$(pwd)"
-
-INFO_TMP_DIR="$(mktemp -d -t gather-logs-XXXXXXXXXX)"
+DATE="$(date +"%Y-%m-%d")"
+INFO_TMP_DIR="$(mktemp -d -t gather-logs-"$DATE"-XXXXXXXXXX)"
 cd "${INFO_TMP_DIR}" || { echo "gather-info: Failed to cd to ${INFO_TMP_DIR} dir."; exit 1; }
 
 # Flag Parsing BEGIN
@@ -153,6 +166,7 @@ fi
 gatherKubernetesPodLogs
 gatherKubernetesObjects
 gatherCephCommands
+gatherCrashInfo
 
 if [ ${enable_pack_info} = 1 ]; then
     packInfo
