@@ -79,6 +79,13 @@ gatherCephCommands() {
     runCommandInToolsPod ceph config dump
 }
 
+gatherCrashInfo() {
+    for crash in $(runCommandInToolsPod ceph crash ls-new); do
+        echo "crash info for $crash "
+        runCommandInToolsPod ceph crash info $crash
+    done
+}
+
 packInfo() {
     OLD_LC_ALL="$LC_ALL"
     # Override to make sure the date / time format isn't breaking the tar file name
@@ -159,6 +166,7 @@ fi
 gatherKubernetesPodLogs
 gatherKubernetesObjects
 gatherCephCommands
+gatherCrashInfo
 
 if [ ${enable_pack_info} = 1 ]; then
     packInfo
