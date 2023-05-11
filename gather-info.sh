@@ -117,7 +117,7 @@ showHelp() {
 # Save current working dir so we can later create the tar file there
 CWD="$(pwd)"
 
-INFO_TMP_DIR="$(mktemp -d -t gather-logs-XXXXXXXXXX)"
+INFO_TMP_DIR="$(mktemp -d -t gather-logs-$(date +"%s-%Y-%m-%d")-XXXXXXXXXX)"
 cd "${INFO_TMP_DIR}" || { echo "gather-info: Failed to cd to ${INFO_TMP_DIR} dir."; exit 1; }
 
 # Flag Parsing BEGIN
