@@ -80,7 +80,7 @@ gatherCephCommands() {
 }
 
 gatherCrashInfo() {
-    for crash in $(runCommandInToolsPod ceph crash ls-new); do
+    for crash in $(kubectl -n "${CLUSTER_NAMESPACE}" exec -it deploy/rook-ceph-tools -- ceph crash ls-new); do
         echo "crash info for $crash "
         runCommandInToolsPod ceph crash info "$crash"
     done
