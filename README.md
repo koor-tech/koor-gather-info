@@ -12,6 +12,7 @@ It collects the following information:
 
 ## Prerequisites
 
+* Requires Bash
 * Currently only works with Rook Ceph clusters
 * [Toolbox pod](https://rook.io/docs/rook/latest-release/Troubleshooting/ceph-toolbox/) must be running to collect some of the information needed by the debug script
 * `kubectl` configured with access to the Kubernetes clusters running the Rook Ceph clusters
