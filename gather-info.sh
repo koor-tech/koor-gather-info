@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 CLUSTER_NAMESPACE="${CLUSTER_NAMESPACE:-rook-ceph}"
 OPERATOR_NAMESPACE="${OPERATOR_NAMESPACE:-}"
@@ -42,12 +42,14 @@ gatherKubernetesObjects() {
     # Get Rook Ceph CRs as YAML
     for crd in $(kubectl get crd --no-headers -o custom-columns=":metadata.name" | grep ".ceph.rook.io"); do
         kubectl get -A "${crd}" --output yaml > "rook_ceph-get-cr-${crd}"
+        echo "Collected yaml Rook CRD ${crd}"
     done
 }
 
 runCommandInToolsPod() {
-    command=$(echo "$*" | sed 's/ /_/g')
-    command=$(echo "$command" | sed 's/-/_/g')
+    command="$*"
+    command="${command// /_}"
+    command="${command//-/_}"
     kubectl -n "${CLUSTER_NAMESPACE}" exec -it deploy/rook-ceph-tools -- "${@}" > ceph-commands/"${command}"
 }
 
@@ -81,7 +83,7 @@ gatherCephCommands() {
 
 gatherCrashInfo() {
     for crash in $(kubectl -n "${CLUSTER_NAMESPACE}" exec -it deploy/rook-ceph-tools -- ceph crash ls-new); do
-        echo "crash info for $crash "
+        echo "Collected crash info for $crash"
         runCommandInToolsPod ceph crash info "$crash"
     done
 }
